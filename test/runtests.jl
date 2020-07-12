@@ -4,6 +4,9 @@ using ReferenceTests
 using UUIDs
 using Pkg
 
+# Include utils
+include("utils.jl")
+
 # Strip the filenames from the string, so that the reference strings work on different computers
 strip_filepaths(str) = replace(str, r" at .*\d+$"m => "")
 
@@ -55,11 +58,29 @@ end
 
 end
 
-const TEST_PKG = (name = "Example", uuid = UUID("7876af07-990d-54b4-ab0e-23690620f79a"))
-
 @testset "Runner tests" begin
-    Pkg.add(TEST_PKG.name)
-    TestReports.test("Example") # Should pass
-    Pkg.rm(TEST_PKG.name)
-    @test_throws Exception TestReports.test("Example")
+    # Simple tests passing
+    test_package_expected_pass("PassingTests")
+    # Errors
+    test_package_expected_fail("FailedTest")
+    test_package_expected_fail("ErroredTest")
+    test_package_expected_fail("NoTestFile")
+    # Various test deps
+    test_pkgs = [
+        "TestsWithDeps",
+        "TestsWithTestDeps"
+    ]
+    for pkg in test_pkgs
+        test_package_expected_pass(pkg)
+    end
+    # Test file project file tests, 1.2 and above
+    @static if VERSION >= v"1.2.0"
+        test_pkgs = [
+            "TestsWithProjectFile",
+            "TestsWithProjectFileWithTestDeps"
+        ]
+        for pkg in test_pkgs
+            test_package_expected_pass(pkg)
+        end
+    end
 end
